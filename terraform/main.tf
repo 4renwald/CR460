@@ -14,35 +14,36 @@ provider "azurerm" {
   features {}
 }
 
-# Configure the new Resource Group
+# Create resource group
 resource "azurerm_resource_group" "rg" {
   name     = "rg-iac-az-ad"
   location = "canadacentral"
 }
 
-# Configure the Network Security Group
+# Create network security group
 resource "azurerm_network_security_group" "nsg" {
   name                = "nsg-iac-az-ad"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
-# Configure the Virtual Network
+# Create virtual network
 resource "azurerm_virtual_network" "vnet" {
   name                = "vnet-iac-az-ad"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   address_space       = ["10.0.0.0/24"]
-  dns_servers         = ["10.0.0.4", "10.0.0.5"]
-
-  subnet {
-    name             = "internal"
-    address_prefixes = ["10.0.0.0/25"]
-    security_group   = azurerm_network_security_group.nsg.id
-  }
 }
 
-# Create NIC
+# Create subnet
+resource "azurerm_subnet" "internal" {
+  name                 = "internal"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.0.0/25"]
+}
+
+# Create network interface card
 resource "azurerm_network_interface" "nic" {
   name                = "nic-dc-01"
   location            = azurerm_resource_group.rg.location
@@ -50,7 +51,7 @@ resource "azurerm_network_interface" "nic" {
 
   ip_configuration {
     name                          = "nic-ip-config"
-    subnet_id                     = azurerm_subnet.vnet.id
+    subnet_id                     = azurerm_subnet.internal.id
     private_ip_address_allocation = "Dynamic"
   }
 }
@@ -86,7 +87,6 @@ resource "azurerm_windows_virtual_machine" "main" {
     sku       = "2022-datacenter-azure-edition"
     version   = "latest"
   }
-
 
   boot_diagnostics {
     storage_account_uri = azurerm_storage_account.my_storage_account.primary_blob_endpoint
