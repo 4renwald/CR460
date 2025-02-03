@@ -89,7 +89,7 @@ resource "azurerm_windows_virtual_machine" "main" {
   }
 
   boot_diagnostics {
-    storage_account_uri = azurerm_storage_account.my_storage_account.primary_blob_endpoint
+    storage_account_uri = azurerm_storage_account.storage_account.primary_blob_endpoint
   }
 }
 
